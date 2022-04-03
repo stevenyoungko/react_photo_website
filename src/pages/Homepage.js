@@ -3,14 +3,17 @@ import Search from '../components/Search'
 import Picture from '../components/Picture'
 
 const Homepage = () => {
-  const [input, setInput] = useState('')
-  const searchURL =  `https://api.pexels.com/v1/search?query=${input}&per_page=15&page=1`  
-  let [data, setData] = useState(null)
-  const auth = '563492ad6f917000010000017d242b38f3d149c4a21bcdba5326d52d'
-  const intialURL = 'https://api.pexels.com/v1/curated?page=1&per_page=15'
+  const [input, setInput] = useState("");
+  let [data, setData] = useState(null);
+  let [page, setPage] = useState(1);
+  const [currentSearch, setCurrentSearch] = useState("");
+  const auth = "563492ad6f91700001000001ac22187f3df749b5ac359637c75cb9b5";
+  const intialURL = "https://api.pexels.com/v1/curated?page=1&per_page=15";
+  const searchURL = `https://api.pexels.com/v1/search?query=${currentSearch}&per_page=15&page=1`;
 
   // fetch data from pexels api
   const search = async (url) => {
+    setPage(2)
     const dataFetch = await fetch(url, {
       method: 'GET',
       headers: {
@@ -22,22 +25,58 @@ const Homepage = () => {
     setData(parsedData.photos)
   };
 
+
+  // load more picture
+  const morePicture = async () => {
+    let newURL = ''
+    if (currentSearch === '') {
+      newURL = `https://api.pexels.com/v1/curated?page=${page}&per_page=15`
+    } else {
+      newURL = `https://api.pexels.com/v1/search?query=${currentSearch}&per_page=15&page=${page}`
+    }
+    setPage(page + 1)
+    const dataFetch = await fetch(newURL, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: auth,
+      },
+    })
+    let parsedData = await dataFetch.json()
+    setData(data.concat(parsedData.photos))
+  }
+
   // fetch data when the page loads up
   useEffect(() => {
     search(intialURL)
   }, [])
 
+  useEffect(() => {
+    if (currentSearch === '') {
+      search(intialURL)
+    } else {
+      search(searchURL)
+    }
+  }, [currentSearch])
+
   return (
     <div style={{ minHeight: '100vh' }}>
-      <Search search={() => {
-        search(searchURL)
-      }} setInput={setInput} />
+      <Search 
+        search={() => {
+          setCurrentSearch(input)
+        }} 
+        setInput={setInput} 
+      />
       <div className='pictures'>
         {data &&
           data.map(d => {
             return <Picture data={d} />
           })
         }
+      </div>
+
+      <div className='morePicture'>
+        <button onClick={morePicture}>Load More</button>
       </div>
     </div>
   )
